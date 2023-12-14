@@ -1,0 +1,56 @@
+#include <AFMotor.h>
+#include <Wire.h>
+#include <DHT.h>
+
+#define DHTPIN A0
+#define DHTTYPE DHT11  // Ubah ke DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
+
+int relayPin = 4;
+int motorSpeed = 200;  // Kecepatan motor (0-255)
+int suhu = 35;
+
+AF_DCMotor motor(2);
+bool isDoorOpen = false;
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Memeriksa suhu, kelembapan, dan status pintu");
+  dht.begin();
+  pinMode(relayPin, OUTPUT);
+}
+
+void loop() {
+  int h = dht.readHumidity();
+  int t = dht.readTemperature();
+
+  // Periksa apakah pembacaan suhu dan kelembapan valid
+  if (!isnan(h) && !isnan(t)) {
+    Serial.print("Kelembapan: ");
+    Serial.print(h);
+    Serial.print(" %, Suhu: ");
+    Serial.println(t);
+
+
+    if (suhu > 30) {
+      // Suhu di atas 30, aktifkan relay dan motor maju
+      motor.setSpeed(motorSpeed);
+      motor.run(FORWARD);
+      delay(1000);
+      motor.run(RELEASE);
+      isDoorOpen=true;
+
+    } else if (suhu < 28) {
+      // Suhu di bawah 28 dan pintu tertutup, matikan relay dan motor mundur
+      motor.setSpeed(motorSpeed);
+      motor.run(BACKWARD);
+      delay(1000);
+      motor.run(RELEASE);
+    } 
+  } else {
+    Serial.println("Gagal membaca sensor. Silakan coba lagi.");
+  }
+
+  delay(1000);
+}
